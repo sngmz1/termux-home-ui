@@ -1,0 +1,95 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# HACK-LOCK :: skin + command
+# Running 'hacklock' (or opening a new Termux session) applies a simple
+# visual skin to the REAL Termux: black background, green text / prompt /
+# cursor, and a compact wallpaper header. Nothing else changes.
+# All normal Termux commands keep working exactly as before.
+
+set -u
+
+HACKLOCK_VERSION="1.0.0"
+HACKLOCK_DIR="${HACKLOCK_DIR:-$HOME/.hacklock}"
+
+CONFIG_FILE="$HACKLOCK_DIR/config/config.sh"
+[ -f "$CONFIG_FILE" ] && . "$CONFIG_FILE"
+
+HACKLOCK_GREEN="${HACKLOCK_GREEN:-#00ff41}"
+HACKLOCK_HEADER_HEIGHT="${HACKLOCK_HEADER_HEIGHT:-8}"
+HACKLOCK_USER_TEXT="${HACKLOCK_USER_TEXT:-HACK-LOCK}"
+HACKLOCK_WALLPAPER="${HACKLOCK_WALLPAPER:-$HOME/.hacklock/wallpaper.jpg}"
+
+show_help() {
+  cat <<'EOF'
+HACK-LOCK - a simple visual skin for Termux on Android.
+It never replaces Termux: every normal command keeps working.
+
+USAGE
+  hacklock             apply the skin (green theme + wallpaper header)
+  hacklock --help      show this help
+  hacklock --version   show version
+  hacklock --config    show config file and current values
+
+CONFIG      ~/.hacklock/config/config.sh
+WALLPAPER   ~/.hacklock/wallpaper.jpg   (replace the file, run 'hacklock')
+
+UNINSTALL   bash ~/.hacklock/uninstall.sh
+EOF
+}
+
+show_config() {
+  echo "Config:     $CONFIG_FILE"
+  echo "Wallpaper:  $HACKLOCK_WALLPAPER"
+  echo
+  if [ -f "$CONFIG_FILE" ]; then
+    sed 's/^/  /' "$CONFIG_FILE"
+  else
+    echo "  (config not found - re-run install.sh)"
+  fi
+}
+
+apply_skin() {
+  # Only touch a real terminal.
+  [ -t 1 ] || return 0
+
+  # 1) Terminal colors: black background, green text, green cursor.
+  printf '\033]10;%s\007' "$HACKLOCK_GREEN"
+  printf '\033]11;#000000\007'
+  printf '\033]12;%s\007' "$HACKLOCK_GREEN"
+
+  # 2) Green prompt.
+  export PS1="\[\e[32m\][$HACKLOCK_USER_TEXT \w]\$ \[\e[0m\]"
+
+  # 3) Green-ish file listings.
+  export LS_COLORS="di=01;32:ln=01;36:ex=01;33:*.sh=01;32:*.py=01;32:"
+
+  # 4) Compact wallpaper header (aspect ratio preserved, never stretched).
+  if [ -f "$HACKLOCK_WALLPAPER" ]; then
+    cols=$(tput cols 2>/dev/null || echo 80)
+    if command -v chafa >/dev/null 2>&1; then
+      chafa --format=symbols --colors=256 \
+        --size "${cols}x${HACKLOCK_HEADER_HEIGHT}" "$HACKLOCK_WALLPAPER" 2>/dev/null \
+        || echo "[HACK-LOCK] could not render wallpaper"
+    elif command -v jp2a >/dev/null 2>&1; then
+      jp2a --colors --width="$cols" --height="$HACKLOCK_HEADER_HEIGHT" \
+        "$HACKLOCK_WALLPAPER" 2>/dev/null \
+        || echo "[HACK-LOCK] could not render wallpaper"
+    else
+      echo "[HACK-LOCK] install chafa to show the wallpaper:  pkg install chafa"
+    fi
+  else
+    echo "[HACK-LOCK] no wallpaper found at $HACKLOCK_WALLPAPER"
+  fi
+
+  # 5) One thin branding line, nothing more.
+  printf '\033[32m── %s ──  %s@%s  ::  normal Termux, normal commands\033[0m\n' \
+    "$HACKLOCK_USER_TEXT" "$(id -un 2>/dev/null || echo user)" \
+    "$(uname -n 2>/dev/null || echo termux)"
+}
+
+case "${1:-}" in
+  --help|-h)     show_help ;;
+  --version|-v)  echo "hacklock $HACKLOCK_VERSION" ;;
+  --config)      show_config ;;
+  *)             apply_skin ;;
+esac
+exit 0
