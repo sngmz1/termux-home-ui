@@ -22,7 +22,7 @@ Open Termux and run:
 ```bash
 pkg update
 pkg install git -y
-git clone <YOUR_REPO_URL> hacklock
+git clone https://github.com/sngmz1/termux-home-ui.git hacklock
 cd hacklock
 bash install.sh
 ```
