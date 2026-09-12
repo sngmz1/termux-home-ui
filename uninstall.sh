@@ -4,6 +4,7 @@
 
 set -u
 INSTALL_DIR="$HOME/.hacklock"
+BACKUP_SUFFIX=".hacklock.bak"
 
 confirm() {
   printf "Remove HACK-LOCK? (~/.hacklock will be deleted) [y/N] "
@@ -25,7 +26,31 @@ strip_hook() {
   fi
 }
 
+# Remove the hook from ~/.bashrc (backup keeps your history intact anyway).
 strip_hook "$HOME/.bashrc"
+
+# Restore login-profile files we touched, or remove a profile we created.
+restore_profile() {
+  local p="$1"
+  [ -f "$p" ] || return
+  if [ -f "$p$BACKUP_SUFFIX" ]; then
+    cp "$p$BACKUP_SUFFIX" "$p"
+    rm -f "$p$BACKUP_SUFFIX"
+    echo "[i] restored $p from backup."
+    return
+  fi
+  # Remove the "load ~/.bashrc" line we added; drop the file if it only
+  # contained that single line (i.e. we created it from scratch).
+  grep -vF '[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"' "$p" > "$p.tmp"
+  if [ -s "$p.tmp" ]; then
+    mv "$p.tmp" "$p"
+  else
+    rm -f "$p.tmp" "$p"
+    echo "[i] removed $p (created by HACK-LOCK)."
+  fi
+}
+restore_profile "$HOME/.bash_profile"
+restore_profile "$HOME/.profile"
 
 if [ -n "${PREFIX:-}" ]; then
   rm -f "$PREFIX/bin/hacklock"

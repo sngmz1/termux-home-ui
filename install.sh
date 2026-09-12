@@ -80,15 +80,20 @@ add_hook() {
 
 # >>>>> HACK-LOCK >>>>>
 # Visual skin for Termux. Removed by uninstall.sh.
-if [ -z "$HACKLOCK_DONE" ]; then
-  export HACKLOCK_DONE=1
-  [ -f "$HOME/.hacklock/config/config.sh" ] && . "$HOME/.hacklock/config/config.sh"
-  export LS_COLORS="di=01;32:ln=01;36:ex=01;33:*.sh=01;32:*.py=01;32:"
-  PS1="\[\e[32m\][${HACKLOCK_USER_TEXT:-HACK-LOCK} \w]\$ \[\e[0m\]"
-  if [ -t 1 ] && [ -f "$HOME/.hacklock/hacklock" ]; then
-    bash "$HOME/.hacklock/hacklock"
+[ -f "$HOME/.hacklock/config/config.sh" ] && . "$HOME/.hacklock/config/config.sh"
+export LS_COLORS="di=01;32:ln=01;36:ex=01;33:*.sh=01;32:*.py=01;32:"
+PS1="\[\e[32m\][${HACKLOCK_USER_TEXT:-HACK-LOCK} \w]\$ \[\e[0m\]"
+__hacklock_resize() {
+  local c
+  c=$(tput cols 2>/dev/null || printf '0')
+  if [ "$c" != "${HACKLOCK_LAST_COLS:-}" ]; then
+    HACKLOCK_LAST_COLS="$c"
+    if [ -t 1 ] && [ -f "$HOME/.hacklock/hacklock" ]; then
+      bash "$HOME/.hacklock/hacklock"
+    fi
   fi
-fi
+}
+PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__hacklock_resize"
 # <<<<< HACK-LOCK <<<<<
 EOF_HL
   say "Auto-skin added to $file"
@@ -96,6 +101,30 @@ EOF_HL
 
 [ -f "$HOME/.bashrc" ] || { touch "$HOME/.bashrc"; say "Created ~/.bashrc"; }
 add_hook "$HOME/.bashrc"
+
+# Termux login shells may read ~/.bash_profile / ~/.profile instead of
+# ~/.bashrc. Make sure one of them loads ~/.bashrc (backing up originals).
+ensure_bashrc_sourced() {
+  local profile="$HOME/.bash_profile"
+  if [ ! -f "$profile" ]; then
+    if [ -f "$HOME/.profile" ]; then
+      profile="$HOME/.profile"
+    else
+      profile="$HOME/.bash_profile"
+      printf '[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"\n' > "$profile"
+      say "Created $profile (loads ~/.bashrc)."
+      return
+    fi
+  fi
+  if grep -qF '~/.bashrc' "$profile" || grep -qF '$HOME/.bashrc' "$profile"; then
+    say "$profile already loads ~/.bashrc."
+  else
+    [ -f "$profile$BACKUP_SUFFIX" ] || cp "$profile" "$profile$BACKUP_SUFFIX"
+    printf '\n[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"\n' >> "$profile"
+    say "Made $profile load ~/.bashrc (backup: $profile$BACKUP_SUFFIX)."
+  fi
+}
+ensure_bashrc_sourced
 
 # 6) Done.
 echo

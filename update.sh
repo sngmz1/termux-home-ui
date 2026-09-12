@@ -6,6 +6,7 @@
 set -u
 INSTALL_DIR="$HOME/.hacklock"
 SRC_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+BACKUP_SUFFIX=".hacklock.bak"
 
 [ -d "$INSTALL_DIR" ] || { echo "HACK-LOCK is not installed. Run: bash install.sh"; exit 1; }
 [ -f "$SRC_DIR/hacklock" ] || { echo "Source repo not found next to update.sh."; exit 1; }
@@ -32,15 +33,20 @@ if [ -f "$HOME/.bashrc" ] && ! grep -qF "# >>>>> HACK-LOCK" "$HOME/.bashrc"; the
 
 # >>>>> HACK-LOCK >>>>>
 # Visual skin for Termux. Removed by uninstall.sh.
-if [ -z "$HACKLOCK_DONE" ]; then
-  export HACKLOCK_DONE=1
-  [ -f "$HOME/.hacklock/config/config.sh" ] && . "$HOME/.hacklock/config/config.sh"
-  export LS_COLORS="di=01;32:ln=01;36:ex=01;33:*.sh=01;32:*.py=01;32:"
-  PS1="\[\e[32m\][${HACKLOCK_USER_TEXT:-HACK-LOCK} \w]\$ \[\e[0m\]"
-  if [ -t 1 ] && [ -f "$HOME/.hacklock/hacklock" ]; then
-    bash "$HOME/.hacklock/hacklock"
+[ -f "$HOME/.hacklock/config/config.sh" ] && . "$HOME/.hacklock/config/config.sh"
+export LS_COLORS="di=01;32:ln=01;36:ex=01;33:*.sh=01;32:*.py=01;32:"
+PS1="\[\e[32m\][${HACKLOCK_USER_TEXT:-HACK-LOCK} \w]\$ \[\e[0m\]"
+__hacklock_resize() {
+  local c
+  c=$(tput cols 2>/dev/null || printf '0')
+  if [ "$c" != "${HACKLOCK_LAST_COLS:-}" ]; then
+    HACKLOCK_LAST_COLS="$c"
+    if [ -t 1 ] && [ -f "$HOME/.hacklock/hacklock" ]; then
+      bash "$HOME/.hacklock/hacklock"
+    fi
   fi
-fi
+}
+PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__hacklock_resize"
 # <<<<< HACK-LOCK <<<<<
 EOF_HL
   echo "[i] auto-skin hook re-added to ~/.bashrc"

@@ -1,8 +1,12 @@
 # HACK-LOCK · Termux skin
 
 A **simple visual skin** for Termux on Android. It shows the HACK-LOCK
-wallpaper as a compact header at the top of the terminal and paints the
-terminal black with HACK-LOCK green text, prompt and cursor — that's all.
+wallpaper as a full-width header at the top of the terminal and paints the
+terminal black with HACK-LOCK green, and that's all. The prompt is simply:
+
+```
+[HACK-LOCK ~]$
+```
 
 Termux stays the **real** terminal: `ls`, `cd`, `pwd`, `clear`, `pkg`,
 `apt`, `python`, `python3`, `git`, `bash`, `sh`, `nano`, `vim`, `curl`,
@@ -12,7 +16,7 @@ browser app, no extra panels, nothing emulated.
 ```
 HACK-LOCK wallpaper header
         ↓
-normal Termux terminal (green on black)
+[HACK-LOCK ~]$           (green, normal Termux)
 ```
 
 ## INSTALL
@@ -54,8 +58,10 @@ cp ~/my-wallpaper.jpg ~/.hacklock/wallpaper.jpg
 hacklock
 ```
 
-The image is displayed as-is, keeping its original aspect ratio (never
-stretched).
+The image is displayed as-is: it fills the current terminal width, its
+height follows the image's own proportions (never stretched, never
+cropped), and it is re-drawn automatically if you rotate the phone or
+resize the terminal.
 
 ## CUSTOM GREEN COLOR
 
@@ -72,8 +78,8 @@ HACKLOCK_GREEN="#00ff41"
 ```
 
 Then run `hacklock` (or open a new session). The same file also lets you
-change the header height (`HACKLOCK_HEADER_HEIGHT`) and the branding text
-(`HACKLOCK_USER_TEXT`).
+change the branding text in the prompt (`HACKLOCK_USER_TEXT`) and the
+maximum header height (`HACKLOCK_HEADER_HEIGHT`, `0` = automatic).
 
 ## UPDATE
 
